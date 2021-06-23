@@ -35,12 +35,27 @@ nvinfer1::ITensor* addUnpadding(
     bool trailing = true,
     bool use_zeros = true);
 
+// Insert a cast layer and cast the input to the output_dtype
+bool register_cast_layer_orig(
+    ConversionCtx* ctx,
+    const torch::jit::Node* n,
+    nvinfer1::ITensor* input,
+    nvinfer1::DataType output_dtype);
+
+// Insert a cast layer and cast the input to the output_dtype
+bool register_cast_layer(
+    ConversionCtx* ctx,
+    const std::string layer_name,
+    nvinfer1::ITensor* input,
+    nvinfer1::DataType output_dtype);
+
 nvinfer1::ILayer* add_elementwise(
     ConversionCtx* ctx,
     nvinfer1::ElementWiseOperation op,
     nvinfer1::ITensor* self,
     nvinfer1::ITensor* other,
     const std::string& name);
+
 
 } // namespace converters
 } // namespace conversion

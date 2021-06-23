@@ -16,6 +16,10 @@ converter_test(
 )
 
 converter_test(
+    name = "test_cast",
+)
+
+converter_test(
     name = "test_concat",
 )
 

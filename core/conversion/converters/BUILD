@@ -33,6 +33,7 @@ cc_library(
         "converter_util.cpp",
         "impl/activation.cpp",
         "impl/batch_norm.cpp",
+        "impl/cast.cpp",
         "impl/concat.cpp",
         "impl/constant.cpp",
         "impl/constant_pad.cpp",
@@ -57,10 +58,12 @@ cc_library(
         "impl/topk.cpp",
         "impl/unary.cpp",
         "impl/unsqueeze.cpp",
+        "precision_handler.cpp",
     ],
     hdrs = [
         "converter_util.h",
         "converters.h",
+        "precision_handler.h",
     ],
     deps = [
         "@tensorrt//:nvinfer",

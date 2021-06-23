@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <string.h>
 
 namespace trtorch {
 namespace core {
@@ -9,18 +10,21 @@ namespace conversion {
 
 // clang-format off
 std::ostream& operator<<(std::ostream& os, const BuilderSettings& s) {
-    os << "Settings requested for TensorRT engine:"                                        \
-       << "\n    Operating Precision: " << s.op_precision                                  \
-       << "\n    TF32 Floating Point Computation Enabled: " << !s.disable_tf32             \
-       << "\n    Truncate Long and Double: " << s.truncate_long_and_double                 \
-       << "\n    Make Refittable Engine: " << s.refit                                      \
-       << "\n    Debuggable Engine: " << s.debug                                           \
-       << "\n    Strict Types: " << s.strict_types                                         \
-       << "\n    GPU ID: " << s.device.gpu_id                                              \
-       << "\n    Allow GPU Fallback (if running on DLA): " << s.device.allow_gpu_fallback  \
-       << "\n    Min Timing Iterations: " << s.num_min_timing_iters                        \
-       << "\n    Avg Timing Iterations: " << s.num_avg_timing_iters                        \
-       << "\n    Max Workspace Size: " << s.workspace_size;
+  os << "Settings requested for TensorRT engine:";
+  os << "\n    Enabled precisions : ";
+  for (auto precision : s.enabled_precisions){
+    os << precision << ", ";
+  }
+  os << "\n    TF32 Floating Point Computation Enabled: " << !s.disable_tf32           \
+     << "\n    Truncate Long and Double: " << s.truncate_long_and_double                 \
+     << "\n    Make Refittable Engine: " << s.refit                                      \
+     << "\n    Debuggable Engine: " << s.debug                                           \
+     << "\n    Strict Types: " << s.strict_types                                         \
+     << "\n    GPU ID: " << s.device.gpu_id                                              \
+     << "\n    Allow GPU Fallback (if running on DLA): " << s.device.allow_gpu_fallback  \
+     << "\n    Min Timing Iterations: " << s.num_min_timing_iters                        \
+     << "\n    Avg Timing Iterations: " << s.num_avg_timing_iters                        \
+     << "\n    Max Workspace Size: " << s.workspace_size;
 
     if (s.max_batch_size != 0) {
     os << "\n    Max Batch Size: " << s.max_batch_size;
@@ -57,29 +61,22 @@ ConversionCtx::ConversionCtx(BuilderSettings build_settings)
   LOG_DEBUG(build_settings);
   cfg = builder->createBuilderConfig();
 
-  switch (settings.op_precision) {
-    case nvinfer1::DataType::kHALF:
+  TRTORCH_CHECK(
+      !(settings.strict_types  && settings.enabled_precisions.size() > 1), "When strict_types is True, enabled_precisions \
+                                                                            can only be set to 1 value but received " << settings.enabled_precisions.size() << " values.");
+
+  for (auto precision : settings.enabled_precisions){
+    if(precision == nvinfer1::DataType::kHALF){
       TRTORCH_CHECK(builder->platformHasFastFp16(), "Requested inference in FP16 but platform does not support FP16");
       cfg->setFlag(nvinfer1::BuilderFlag::kFP16);
       input_type = nvinfer1::DataType::kHALF;
-      break;
-    case nvinfer1::DataType::kINT8:
+    }else if(precision == nvinfer1::DataType::kINT8){
       TRTORCH_CHECK(builder->platformHasFastInt8(), "Requested inference in INT8 but platform does not support INT8");
       cfg->setFlag(nvinfer1::BuilderFlag::kINT8);
-      if (!settings.strict_types) {
-        cfg->setFlag(nvinfer1::BuilderFlag::kFP16);
-      }
-      input_type = nvinfer1::DataType::kFLOAT;
-      TRTORCH_CHECK(
-          settings.calibrator != nullptr,
-          "Requested inference in INT8 but no calibrator provided, set the ptq_calibrator field in the CompileSpec struct with your calibrator");
-      cfg->setInt8Calibrator(settings.calibrator);
-      break;
-    case nvinfer1::DataType::kFLOAT:
-    default:
-      input_type = nvinfer1::DataType::kFLOAT;
-      break;
+    }
   }
+
+  input_type = nvinfer1::DataType::kHALF;
   op_precision = settings.op_precision;
 
   if (settings.disable_tf32) {

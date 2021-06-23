@@ -60,6 +60,36 @@ nvinfer1::ITensor* addUnpadding(
   }
 }
 
+bool register_cast_layer_orig(
+    ConversionCtx* ctx,
+    const torch::jit::Node* n,
+    nvinfer1::ITensor* input,
+    nvinfer1::DataType output_dtype) {
+  auto cast_layer = ctx->net->addIdentity(*input);
+  cast_layer->setOutputType(0, output_dtype);
+
+  input = ctx->AssociateValueAndTensor(n->outputs()[0], cast_layer->getOutput(0));
+  LOG_DEBUG("Cast layer output tensor shape: " << input->getDimensions());
+
+  return true;
+}
+
+bool register_cast_layer(
+    ConversionCtx* ctx,
+    const std::string layer_name,
+    nvinfer1::ITensor* input,
+    nvinfer1::DataType output_dtype) {
+  auto cast_layer = ctx->net->addIdentity(*input);
+  // std::string input_name = input->getName();
+  cast_layer->setName(layer_name.c_str());
+  // LOG_DEBUG(util::node_info(n) + input_name);
+  cast_layer->setOutputType(0, output_dtype);
+  input = cast_layer->getOutput(0);
+  // input = ctx->AssociateValueAndTensor(n->outputs()[0], cast_layer->getOutput(0));
+  LOG_DEBUG("Cast layer output tensor shape: " << input->getDimensions());
+
+  return true;
+
 nvinfer1::ILayer* add_elementwise(
     ConversionCtx* ctx,
     nvinfer1::ElementWiseOperation op,
@@ -120,6 +150,7 @@ nvinfer1::ILayer* add_elementwise(
   auto ele = ctx->net->addElementWise(*self, *other, op);
   ele->setName(name.c_str());
   return ele;
+
 }
 
 } // namespace converters
