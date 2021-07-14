@@ -41,7 +41,7 @@ TEST(Converters, ATenSigmoidConvertsCorrectly) {
   params = trtorch::core::conversion::get_named_params(g->inputs(), {});
   auto trt_results = trtorch::tests::util::RunGraphEngine(g, params, {in});
 
-  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 2e-6));
+  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 4e-6));
 }
 
 TEST(Converters, ATenTanhConvertsCorrectly) {
@@ -61,7 +61,7 @@ TEST(Converters, ATenTanhConvertsCorrectly) {
   params = trtorch::core::conversion::get_named_params(g->inputs(), {});
   auto trt_results = trtorch::tests::util::RunGraphEngine(g, params, {in});
 
-  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 2e-6));
+  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 7e-6));
 }
 
 // TODO: Seems like the IR parser is not handling negative numbers well, need to
@@ -223,5 +223,5 @@ TEST(Converters, ATenGELUConvertsCorrectly) {
   // c10::cuda::compat::normcdf to compute Phi(x). So there's a difference here and therefore the threshold is slightly
   // higher than other ops. One in ten runs will give you an out of normal threshold result
 
-  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 5e-4));
+  ASSERT_TRUE(trtorch::tests::util::almostEqual(jit_results[0], trt_results[0], 4e-4));
 }
